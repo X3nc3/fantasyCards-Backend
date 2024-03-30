@@ -6,7 +6,7 @@ const User = require("../models/users");
 const { checkBody } = require("../modules/checkBody");
 const uid2 = require("uid2");
 const bcrypt = require("bcrypt");
-const Pack = require("../models/packs")
+const Pack = require("../models/packs");
 
 router.get("/", function (req, res, next) {
   res.send("respond with a resource");
@@ -18,13 +18,14 @@ router.post("/signup", async (req, res) => {
     return;
   }
   // Get startup pack
-  const startupPack = await Pack.findOne({ "rarity": 4 })
+  const startupPack = await Pack.findOne({ rarity: 4 });
+  console.log(startupPack);
 
   // Check if user is not already registered
-  const user = await User.findOne({ email: req.body.email })
+  const user = await User.findOne({ email: req.body.email });
   if (user === null) {
     const hash = bcrypt.hashSync(req.body.password, 10);
-    const token = uid2(32)
+    const token = uid2(32);
     const newUser = await new User({
       username: req.body.username,
       email: req.body.email,
@@ -33,16 +34,19 @@ router.post("/signup", async (req, res) => {
       credits: Math.floor(Math.random() * 89999 + 10000),
       gamesId: [],
       cardsId: [],
-      packsId: [startupPack._id]
-    })
-    await Pack.updateOne({ _id: startupPack._id }, {
-      $push: {
-        packPrices: {
-          price: 0,
-          userToken: token
-        }
+      packsId: [startupPack._id],
+    });
+    await Pack.updateOne(
+      { _id: startupPack._id },
+      {
+        $push: {
+          packPrices: {
+            price: 0,
+            userToken: token,
+          },
+        },
       }
-    })
+    );
     await newUser.save().then((newDoc) => {
       res.json({
         result: true,
@@ -51,9 +55,8 @@ router.post("/signup", async (req, res) => {
         gamesList: newDoc.gamesId,
         cardsList: newDoc.cardsId,
         packsList: newDoc.packsId,
-      })
-    })
-
+      });
+    });
   } else {
     // User already in db
     res.json({ result: false, error: "User exists already" });
