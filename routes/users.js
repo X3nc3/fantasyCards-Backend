@@ -8,18 +8,25 @@ const uid2 = require("uid2");
 const bcrypt = require("bcrypt");
 const Pack = require("../models/packs");
 
-router.get("/", function (req, res, next) {
-  res.send("respond with a resource");
-});
+// router.get("/", function (req, res, next) {
+//   res.send("respond with a resource");
+// });
 
 router.post("/signup", async (req, res) => {
+  function validateEmail(email) {
+    var emailReg = new RegExp(/^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$/gi);
+    return emailReg.test(email);
+  }
   if (!checkBody(req.body, ["username", "email", "password"])) {
     res.json({ result: false, error: "Missing or empty fields" });
     return;
   }
+  if (!validateEmail(req.body.email)) {
+    res.json({ result: false, error: "Invalid email format" });
+    return;
+  }
   // Get startup pack
   const startupPack = await Pack.findOne({ rarity: 4 });
-  console.log(startupPack);
 
   // Check if user is not already registered
   const user = await User.findOne({ email: req.body.email });
@@ -47,14 +54,15 @@ router.post("/signup", async (req, res) => {
         },
       }
     );
-    await newUser.save().then((newDoc) => {
+    await newUser.save().then(async (newDoc) => {
+      const fullPackinfo = await Pack.findById(startupPack._id);
       res.json({
         result: true,
         token: newDoc.token,
         username: newDoc.username,
         gamesList: newDoc.gamesId,
         cardsList: newDoc.cardsId,
-        packsList: newDoc.packsId,
+        packsList: [fullPackinfo],
       });
     });
   } else {
